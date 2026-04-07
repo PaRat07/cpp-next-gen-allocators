@@ -46,6 +46,7 @@ struct MonotonicResource {
       cur_head = res + sz;
       return res;
     }
+    return fallback.allocate(sz, alginment);
   }
 
   void deallocate(void* ptr, size_t sz) {
@@ -81,6 +82,8 @@ struct PolymorphicMemoryResource {
 template<typename T>
 PolymorphicMemoryResource MakePolymorphicMemoryResource(T resource) {
   struct ConcreteMemoryResource : AbstractMemoryResource {
+    ConcreteMemoryResource(std::remove_pointer_t<T>* res) : res(res) {}
+
     void* allocate(size_t sz, size_t alginment) override {
       return res->allocate(sz, alginment);
     }
@@ -91,9 +94,9 @@ PolymorphicMemoryResource MakePolymorphicMemoryResource(T resource) {
     std::remove_pointer_t<T>* res;
   };
   if constexpr (std::is_pointer_v<T>) {
-    return PolymorphicMemoryResource{ new ConcreteMemoryResource{resource}};
+    return PolymorphicMemoryResource{ new ConcreteMemoryResource(resource)};
   } else {
-    return PolymorphicMemoryResource{ new ConcreteMemoryResource{new auto(resource)}};
+    return PolymorphicMemoryResource{ new ConcreteMemoryResource(new auto(resource))};
   }
 }
 
